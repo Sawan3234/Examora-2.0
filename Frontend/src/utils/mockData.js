@@ -1,4 +1,10 @@
-// Mock data for exam sessions
+/** Row backgrounds: subtle tints, full-width (no heavy side borders) */
+const ROW = {
+  cream: "bg-amber-50/50 hover:bg-amber-50/70 transition-colors",
+  green: "bg-emerald-50/40 hover:bg-emerald-50/60 transition-colors",
+  red: "bg-red-50/50 hover:bg-red-50/70 transition-colors",
+};
+
 export const mockExamSessions = [
   {
     id: 1,
@@ -8,8 +14,10 @@ export const mockExamSessions = [
     progress: 6,
     totalQuestions: 10,
     violations: 3,
+    violationsHigh: 0,
     time: "20m 45s",
-    borderColor: "border-yellow-400",
+    rowClass: ROW.cream,
+    progressVariant: "violet",
   },
   {
     id: 2,
@@ -19,8 +27,10 @@ export const mockExamSessions = [
     progress: 10,
     totalQuestions: 10,
     violations: 1,
+    violationsHigh: 0,
     time: "30m 0s",
-    borderColor: "border-green-400",
+    rowClass: ROW.green,
+    progressVariant: "violet",
   },
   {
     id: 3,
@@ -30,8 +40,10 @@ export const mockExamSessions = [
     progress: 8,
     totalQuestions: 10,
     violations: 12,
+    violationsHigh: 5,
     time: "27m 0s",
-    borderColor: "border-red-400",
+    rowClass: ROW.red,
+    progressVariant: "danger",
   },
   {
     id: 4,
@@ -41,8 +53,23 @@ export const mockExamSessions = [
     progress: 4,
     totalQuestions: 10,
     violations: 0,
+    violationsHigh: 0,
     time: "13m 0s",
-    borderColor: "border-green-400",
+    rowClass: ROW.cream,
+    progressVariant: "violet",
+  },
+  {
+    id: 5,
+    candidateName: "David Williams",
+    candidateEmail: "david.w@example.com",
+    status: "Completed",
+    progress: 10,
+    totalQuestions: 10,
+    violations: 2,
+    violationsHigh: 0,
+    time: "32m 30s",
+    rowClass: ROW.green,
+    progressVariant: "violet",
   },
 ];
 

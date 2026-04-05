@@ -1,7 +1,9 @@
-import { AdminDashboard } from './pages/AdminDashboard'
+import { AdminDashboard } from './pages/AdminDashboard';
 
 function App() {
-  return <AdminDashboard />
+  return (
+    <AdminDashboard />
+  );
 }
 
-export default App
+export default App;

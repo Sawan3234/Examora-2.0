@@ -1,17 +1,36 @@
-export function ProgressBar({ current, total, className = "" }) {
-  const percentage = (current / total) * 100;
+import React from 'react';
+
+export const ProgressBar = ({ 
+  value = 0, 
+  max = 100,
+  variant = 'violet',
+  height = 'h-2',
+  showPercentage = false,
+  className = ''
+}) => {
+  const percentage = Math.min((value / max) * 100, 100);
+
+  const variantColors = {
+    violet: 'bg-[#4f39f6]',
+    blue: 'bg-[#4f39f6]',
+    emerald: 'bg-[#4f39f6]',
+    danger: 'bg-[#4f39f6]',
+    amber: 'bg-[#4f39f6]',
+  };
 
   return (
-    <div className={`flex items-center gap-3 ${className}`}>
-      <div className="flex-1 h-2 bg-gray-200 rounded-full overflow-hidden">
+    <div className={`w-full ${className}`}>
+      <div className={`w-full ${height} bg-[#e5e7eb] rounded-sm overflow-hidden`}>
         <div
-          className="h-full bg-gradient-to-r from-blue-500 to-violet-600 rounded-full transition-all duration-300"
+          className={`${height} ${variantColors[variant]} rounded-sm transition-all duration-300 ease-in-out`}
           style={{ width: `${percentage}%` }}
         />
       </div>
-      <span className="text-sm font-medium text-gray-700 min-w-12">
-        {current}/{total}
-      </span>
+      {showPercentage && (
+        <p className="text-sm font-medium text-[#4a5565] mt-1">
+          {Math.round(percentage)}%
+        </p>
+      )}
     </div>
   );
-}
+};

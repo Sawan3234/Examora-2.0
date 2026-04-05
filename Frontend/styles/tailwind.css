@@ -1,0 +1,107 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Primary Text Colors */
+    --text-success: #008236;
+    --text-success-light: #00a63e;
+    --text-primary: #101828;
+    --text-accent-blue: #1447e6;
+    --text-link: #155dfc;
+    --text-secondary: #364153;
+    --text-muted: #4a5565;
+    --text-light: #6a7282;
+    --text-error: #c10007;
+    --text-warning: #e17100;
+    --text-error-bright: #e7000b;
+    --text-white: #ffffff;
+    --text-white-transparent: #ffffff7f;
+
+    /* Background Colors */
+    --bg-accent-transparent: #155dfc84;
+    --bg-primary: #4f39f6;
+    --bg-blue-light: #dbeafe;
+    --bg-success-light: #dcfce7;
+    --bg-gray-light: #e5e7eb;
+    --bg-success-pale: #f0fdf4;
+    --bg-neutral: #f3f4f6;
+    --bg-base: #f9fafb;
+    --bg-error-light: #fef2f2;
+    --bg-error-pale: #ffe2e2;
+    --bg-warning-light: #fffbeb;
+    --bg-white: #ffffff;
+
+    /* Border Colors */
+    --border-success: #00c950;
+    --border-accent: #c6d2ff;
+    --border-light: #d1d5dc;
+    --border-gray: #e5e7eb;
+    --border-error: #fb2c36;
+    --border-warning: #fe9a00;
+
+    /* Typography Variables */
+    --font-size-xs: 12px;
+    --font-size-sm: 14px;
+    --font-size-base: 16px;
+    --font-size-lg: 18px;
+    --font-size-xl: 20px;
+    --font-size-2xl: 24px;
+    --font-size-3xl: 30px;
+
+    /* Font Weight Variables */
+    --font-weight-normal: 400;
+    --font-weight-medium: 500;
+    --font-weight-semibold: 600;
+    --font-weight-bold: 700;
+
+    /* Line Height Variables */
+    --line-height-tight: 15px;
+    --line-height-snug: 17px;
+    --line-height-base: 20px;
+    --line-height-relaxed: 22px;
+    --line-height-loose: 25px;
+    --line-height-xl: 30px;
+    --line-height-2xl: 37px;
+
+    /* Spacing Variables */
+    --spacing-xs: 4px;
+    --spacing-sm: 6px;
+    --spacing-md: 8px;
+    --spacing-lg: 10px;
+    --spacing-xl: 12px;
+    --spacing-2xl: 14px;
+    --spacing-3xl: 16px;
+    --spacing-4xl: 20px;
+    --spacing-5xl: 22px;
+    --spacing-6xl: 24px;
+    --spacing-7xl: 26px;
+    --spacing-8xl: 28px;
+    --spacing-9xl: 32px;
+    --spacing-10xl: 38px;
+    --spacing-11xl: 52px;
+
+    /* Border Radius Variables */
+    --radius-xs: 3px;
+    --radius-sm: 4px;
+    --radius-md: 10px;
+    --radius-lg: 12px;
+    --radius-xl: 14px;
+    --radius-2xl: 20px;
+
+    /* Component-Specific Colors */
+    --header-bg: #ffffff;
+    --header-border: #e5e7eb;
+    --button-primary-bg: #4f39f6;
+    --button-secondary-bg: #f3f4f6;
+    --button-primary-text: #ffffff;
+    --button-secondary-text: #364153;
+    --search-border: #d1d5dc;
+    --search-placeholder: #ffffff7f;
+    --table-header-bg: #f9fafb;
+    --table-border: #e5e7eb;
+    --progress-fill: #4f39f6;
+    --progress-bg: #e5e7eb;
+  }
+}
