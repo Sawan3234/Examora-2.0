@@ -25,7 +25,7 @@ export const StatCard = ({
         {Icon && <Icon className={`w-12 h-12 ${iconClassName}`} strokeWidth={1.5} />}
       </div>
       <div className="flex flex-col items-start">
-        <p className={`text-2xl lg:text-3xl font-bold ${valueClassName}`}>
+        <p className={`text-3xl lg:text-5xl font-extrabold ${valueClassName}`}>
           {value}
         </p>
         {helperText && (

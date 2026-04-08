@@ -1,0 +1,957 @@
+import { useEffect, useRef, useState } from "react";
+import {
+  AlertCircle,
+  Calendar,
+  CheckSquare,
+  Clock3,
+  Code2,
+  FileText,
+  Plus,
+  PenLine,
+  Save,
+  Trash2,
+  X,
+} from "lucide-react";
+
+const STEPS = [1, 2, 3, 4];
+const DEFAULT_PROCTORING_RULES = [
+  "Camera must be enabled throughout the exam",
+  "No switching tabs or windows during the exam",
+  "Face must be visible at all times",
+  "No external materials or devices allowed",
+];
+const DEFAULT_OPTIONS = [
+  { id: 1, text: "" },
+  { id: 2, text: "" },
+  { id: 3, text: "" },
+  { id: 4, text: "" },
+];
+
+const createEmptyQuestion = (id) => ({
+  id,
+  text: "",
+  points: 10,
+  testCases: [],
+  options: [],
+  correctOption: null,
+});
+
+const INITIAL_QUESTION = createEmptyQuestion(1);
+
+const EXAM_TYPES = [
+  {
+    key: "writing",
+    title: "Writing",
+    description: "Descriptive answers in text areas",
+    Icon: PenLine,
+  },
+  {
+    key: "multiple-choice",
+    title: "Multiple Choice",
+    description: "Questions with multiple options",
+    Icon: CheckSquare,
+  },
+  {
+    key: "coding",
+    title: "Coding",
+    description: "Programming challenges",
+    Icon: Code2,
+  },
+];
+
+export function CreateExamModal({ isOpen, onClose }) {
+  const [currentStep, setCurrentStep] = useState(1);
+  const [examType, setExamType] = useState("writing");
+  const [questions, setQuestions] = useState([createEmptyQuestion(1)]);
+  const [examTitle, setExamTitle] = useState("");
+  const [examDescription, setExamDescription] = useState("");
+  const [durationMinutes, setDurationMinutes] = useState(30);
+  const [generalInstructions, setGeneralInstructions] = useState("");
+  const [proctoringRules, setProctoringRules] = useState(DEFAULT_PROCTORING_RULES);
+  const [newRule, setNewRule] = useState("");
+  const onCloseRef = useRef(onClose);
+
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  }, [onClose]);
+
+  const progressWidth = `${((currentStep - 1) / (STEPS.length - 1)) * 100}%`;
+  const totalPoints = questions.reduce((sum, q) => sum + Number(q.points || 0), 0);
+  const selectedExamTypeConfig = EXAM_TYPES.find((type) => type.key === examType);
+  const selectedExamType = selectedExamTypeConfig?.title || "Exam";
+  const SelectedExamTypeIcon = selectedExamTypeConfig?.Icon || Code2;
+  const isStep1Valid =
+    examTitle.trim().length > 0 &&
+    examDescription.trim().length > 0 &&
+    examType.trim().length > 0 &&
+    Number(durationMinutes) > 0;
+  const isStep2Valid = questions.some((question) => question.text.trim().length > 0);
+
+  const handleNext = () => {
+    if (currentStep === 1 && !isStep1Valid) return;
+    if (currentStep === 2 && !isStep2Valid) return;
+    setCurrentStep((step) => Math.min(step + 1, STEPS.length));
+  };
+
+  const handlePrevious = () => {
+    setCurrentStep((step) => Math.max(step - 1, 1));
+  };
+
+  const handleAddQuestion = () => {
+    setQuestions((prev) => {
+      const nextId = Math.max(0, ...prev.map((question) => question.id)) + 1;
+      return [...prev, createEmptyQuestion(nextId)];
+    });
+  };
+
+  const handleDeleteQuestion = (id) => {
+    setQuestions((prev) => {
+      if (prev.length <= 1) return prev;
+      return prev
+        .filter((question) => question.id !== id)
+        .map((question, index) => ({ ...question, id: index + 1 }));
+    });
+  };
+
+  const handleQuestionTextChange = (id, value) => {
+    setQuestions((prev) =>
+      prev.map((q) => (q.id === id ? { ...q, text: value } : q))
+    );
+  };
+
+  const handleQuestionPointsChange = (id, value) => {
+    setQuestions((prev) =>
+      prev.map((q) => (q.id === id ? { ...q, points: value } : q))
+    );
+  };
+
+  const handleOptionTextChange = (questionId, optionId, value) => {
+    setQuestions((prev) =>
+      prev.map((question) =>
+        question.id === questionId
+          ? {
+              ...question,
+              options: (question.options || []).map((option) =>
+                option.id === optionId ? { ...option, text: value } : option
+              ),
+            }
+          : question
+      )
+    );
+  };
+
+  const handleCorrectOptionChange = (questionId, optionId) => {
+    setQuestions((prev) =>
+      prev.map((question) =>
+        question.id === questionId ? { ...question, correctOption: optionId } : question
+      )
+    );
+  };
+
+  const handleAddOption = (questionId) => {
+    setQuestions((prev) =>
+      prev.map((question) => {
+        if (question.id !== questionId) return question;
+
+        const nextOptionId =
+          Math.max(0, ...(question.options || []).map((option) => option.id)) + 1;
+
+        return {
+          ...question,
+          options: [...(question.options || []), { id: nextOptionId, text: "" }],
+        };
+      })
+    );
+  };
+
+  const handleInitializeOptions = (questionId) => {
+    setQuestions((prev) =>
+      prev.map((question) =>
+        question.id === questionId
+          ? {
+              ...question,
+              options: DEFAULT_OPTIONS.map((option) => ({ ...option })),
+              correctOption: 1,
+            }
+          : question
+      )
+    );
+  };
+
+  const handleDeleteOption = (questionId, optionId) => {
+    setQuestions((prev) =>
+      prev.map((question) => {
+        if (question.id !== questionId) return question;
+
+        const currentOptions = question.options || [];
+        if (currentOptions.length <= 2) return question;
+
+        const remainingOptions = currentOptions
+          .filter((option) => option.id !== optionId)
+          .map((option, index) => ({ ...option, id: index + 1 }));
+
+        const nextCorrectOption =
+          question.correctOption === optionId
+            ? 1
+            : Math.min(question.correctOption || 1, remainingOptions.length);
+
+        return {
+          ...question,
+          options: remainingOptions,
+          correctOption: nextCorrectOption,
+        };
+      })
+    );
+  };
+
+  const handleAddTestCase = (questionId) => {
+    setQuestions((prev) =>
+      prev.map((question) => {
+        if (question.id !== questionId) return question;
+
+        const nextTestCaseId =
+          Math.max(0, ...(question.testCases || []).map((testCase) => testCase.id || 0)) + 1;
+
+        return {
+          ...question,
+          testCases: [
+            ...(question.testCases || []),
+            { id: nextTestCaseId, input: "", output: "" },
+          ],
+        };
+      })
+    );
+  };
+
+  const handleTestCaseChange = (questionId, testCaseId, field, value) => {
+    setQuestions((prev) =>
+      prev.map((question) => {
+        if (question.id !== questionId) return question;
+
+        return {
+          ...question,
+          testCases: (question.testCases || []).map((testCase) =>
+            testCase.id === testCaseId ? { ...testCase, [field]: value } : testCase
+          ),
+        };
+      })
+    );
+  };
+
+  const handleDeleteTestCase = (questionId, testCaseId) => {
+    setQuestions((prev) =>
+      prev.map((question) => {
+        if (question.id !== questionId) return question;
+
+        const remainingTestCases = (question.testCases || [])
+          .filter((testCase) => testCase.id !== testCaseId)
+          .map((testCase, index) => ({ ...testCase, id: index + 1 }));
+
+        return {
+          ...question,
+          testCases: remainingTestCases,
+        };
+      })
+    );
+  };
+
+  const handleRemoveProctoringRule = (indexToRemove) => {
+    setProctoringRules((prev) => prev.filter((_, index) => index !== indexToRemove));
+  };
+
+  const handleAddProctoringRule = () => {
+    const trimmedRule = newRule.trim();
+    if (!trimmedRule) return;
+
+    setProctoringRules((prev) => [...prev, trimmedRule]);
+    setNewRule("");
+  };
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    setCurrentStep(1);
+    setQuestions([createEmptyQuestion(1)]);
+    setExamTitle("");
+    setExamDescription("");
+    setDurationMinutes(30);
+    setGeneralInstructions("");
+    setProctoringRules(DEFAULT_PROCTORING_RULES);
+    setNewRule("");
+
+    const onKeyDown = (event) => {
+      if (event.key === "Escape") {
+        onCloseRef.current();
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isOpen]);
+
+  if (!isOpen) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4 py-6 backdrop-blur-[2px] rounded-lg"
+      onClick={onClose}
+      role="presentation"
+    >
+      <div
+        className="w-full max-w-[920px] overflow-hidden rounded-3xl bg-white shadow-2xl"
+        onClick={(event) => event.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Create New Exam"
+      >
+        <div className="flex items-center justify-between bg-gradient-to-r from-indigo-600 to-purple-600 p-6">
+          <div className="flex items-center gap-3">
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-white/20">
+              <FileText className="h-5 w-5 text-white" />
+            </div>
+            <div>
+              <h3 className="text-xl font-bold text-white">Create New Exam</h3>
+              <p className="mt-0.5 text-sm text-indigo-100">Step {currentStep} of 4</p>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-white transition-colors hover:bg-white/20"
+            aria-label="Close modal"
+          >
+            <X className="h-[18px] w-[18px]" />
+          </button>
+        </div>
+
+        <div className="bg-[#f3f4f6] px-6 pb-2">
+          <div className="relative h-6">
+            <div className="absolute top-3 h-1 w-full rounded bg-gray-300" />
+            <div className="absolute top-3 h-1 rounded bg-indigo-600" style={{ width: progressWidth }} />
+            <div className="absolute top-0 left-0 right-0 grid grid-cols-4">
+              {STEPS.map((step) => {
+                const active = step <= currentStep;
+                return (
+                  <div key={step} className="flex justify-center">
+                    <span
+                      className={`flex h-6 w-6 items-center justify-center rounded-full border-2 border-white text-xs font-bold ${
+                        active
+                          ? "bg-indigo-600 text-white"
+                          : "bg-gray-300 text-gray-600"
+                      }`}
+                    >
+                      {step}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+
+        {currentStep === 1 ? (
+          <>
+            <div className="max-h-[62vh] space-y-5 overflow-y-auto bg-white p-6">
+              <h4 className="text-[20px] font-extrabold text-gray-900">Exam Basic Details</h4>
+
+              <div>
+                <label className="mb-2 block text-[14px] font-extrabold text-gray-700">
+                  Exam Title *
+                </label>
+                <input
+                  type="text"
+                  value={examTitle}
+                  onChange={(event) => setExamTitle(event.target.value)}
+                  placeholder="e.g., Computer Science Final Exam"
+                  className="w-full rounded-[10px] border border-gray-300 px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="mb-2 block text-[14px] font-extrabold text-gray-700">
+                  Description *
+                </label>
+                <textarea
+                  rows={4}
+                  value={examDescription}
+                  onChange={(event) => setExamDescription(event.target.value)}
+                  placeholder="Describe the exam purpose, topics covered, etc."
+                  className="w-full resize-none rounded-[10px] border border-gray-300 px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <label className="mb-3 block text-[14px] font-extrabold text-gray-700">
+                  Exam Type *
+                </label>
+                <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+                  {EXAM_TYPES.map(({ key, title, description, Icon }) => {
+                    const selected = examType === key;
+
+                    return (
+                      <button
+                        key={key}
+                        type="button"
+                        onClick={() => setExamType(key)}
+                        className={`rounded-[10px] border-2 p-4 text-left transition-all ${
+                          selected
+                            ? "border-indigo-600 bg-indigo-50"
+                            : "border-gray-200 bg-white hover:border-gray-300"
+                        }`}
+                      >
+                        <div className="mb-2 flex items-center gap-3">
+                          <div
+                            className={`flex h-10 w-10 items-center justify-center rounded-lg ${
+                              selected ? "bg-indigo-600" : "bg-gray-100"
+                            }`}
+                          >
+                            <Icon
+                              className={`h-5 w-5 ${
+                                selected ? "text-white" : "text-gray-600"
+                              }`}
+                            />
+                          </div>
+
+                          <p
+                            className={`flex-1 text-[16px] font-extrabold ${
+                              selected ? "text-indigo-900" : "text-gray-900"
+                            }`}
+                          >
+                            {title}
+                          </p>
+
+                          {selected && (
+                            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-600">
+                              <span className="h-2 w-2 rounded-full bg-white" />
+                            </span>
+                          )}
+                        </div>
+                        <p className="text-[13px] text-gray-400">{description}</p>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                  <label className="mb-2 flex items-center text-sm font-semibold text-gray-700">
+                    <Clock3 className="mr-1 h-4 w-4" />
+                    Duration (minutes) *
+                  </label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={durationMinutes}
+                    onChange={(event) => setDurationMinutes(Number(event.target.value) || 0)}
+                    className="w-full rounded-[10px] border border-gray-300 px-3 py-3 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-gray-700">
+                    Passing Score (%)
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={100}
+                    defaultValue={60}
+                    className="w-full rounded-[10px] border border-gray-300 px-3 py-3 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                <div>
+                  <label className="mb-2 flex items-center text-sm font-semibold text-gray-700">
+                    <Calendar className="mr-1 h-4 w-4" />
+                    Scheduled Date
+                  </label>
+                  <input
+                    type="date"
+                    className="w-full rounded-[10px] border border-gray-300 px-3 py-3 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+                <div>
+                  <label className="mb-2 block text-sm font-semibold text-gray-700">
+                    Scheduled Time
+                  </label>
+                  <input
+                    type="time"
+                    className="w-full rounded-[10px] border border-gray-300 px-3 py-3 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between border-t border-gray-200 bg-gray-50 px-4 py-4">
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-[10px] border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50"
+              >
+                Cancel
+              </button>
+
+              <button
+                type="button"
+                onClick={handleNext}
+                disabled={!isStep1Valid}
+                className="rounded-[10px] bg-gradient-to-r from-indigo-500 to-purple-500 px-6 py-2.5 text-sm font-semibold text-white transition-all hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:brightness-100"
+              >
+                Next Step
+              </button>
+            </div>
+          </>
+        ) : currentStep === 2 ? (
+          <>
+            <div className="max-h-[62vh] space-y-4 overflow-y-auto bg-white p-6">
+              <div className="flex items-center justify-between">
+                <h4 className="text-[18px] font-bold text-gray-900">Exam Questions</h4>
+                <button
+                  type="button"
+                  onClick={handleAddQuestion}
+                  className="inline-flex items-center gap-2 rounded-[10px] bg-gradient-to-r from-indigo-500 to-purple-500 px-4 py-2 text-sm font-semibold text-white"
+                >
+                  <Plus className="h-4 w-4" />
+                  Add Question
+                </button>
+              </div>
+
+              {examType === "writing" ? (
+                questions.map((question) => (
+                  <div key={question.id} className="rounded-[10px] border border-gray-200 bg-white p-4">
+                    <div className="mb-3 flex items-center justify-between">
+                      <p className="text-[16px] font-bold text-gray-700">Question {question.id}</p>
+                      {questions.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteQuestion(question.id)}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] border border-red-200 bg-red-50 text-red-600 transition-colors hover:bg-red-100"
+                          aria-label={`Delete question ${question.id}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+
+                    <textarea
+                      rows={3}
+                      placeholder="Enter your question here..."
+                      value={question.text}
+                      onChange={(event) => handleQuestionTextChange(question.id, event.target.value)}
+                      className="w-full resize-none rounded-[10px] border border-gray-300 px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+
+                    <div className="mt-4 flex items-center gap-3">
+                      <label className="text-[16px] font-semibold text-gray-700">Points:</label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={question.points}
+                        onChange={(event) => handleQuestionPointsChange(question.id, event.target.value)}
+                        className="w-[76px] rounded-[10px] border border-gray-300 px-3 py-1.5 text-sm font-medium leading-none text-gray-700 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+                  </div>
+                ))
+              ) : examType === "multiple-choice" ? (
+                questions.map((question) => (
+                  <div key={question.id} className="rounded-[10px] border border-gray-200 bg-[#f5f6f8] p-4">
+                    <div className="mb-3 flex items-center justify-between">
+                      <p className="text-[16px] font-bold text-gray-700">Question {question.id}</p>
+                      {questions.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteQuestion(question.id)}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] border border-red-200 bg-red-50 text-red-600 transition-colors hover:bg-red-100"
+                          aria-label={`Delete question ${question.id}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+
+                    <textarea
+                      rows={3}
+                      placeholder="Enter your question here..."
+                      value={question.text}
+                      onChange={(event) => handleQuestionTextChange(question.id, event.target.value)}
+                      className="w-full resize-none rounded-[10px] border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+
+                    <div className="mt-4 flex items-center gap-3">
+                      <label className="text-[16px] font-semibold text-gray-700">Points:</label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={question.points}
+                        onChange={(event) => handleQuestionPointsChange(question.id, event.target.value)}
+                        className="w-[76px] rounded-[10px] border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium leading-none text-gray-700 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+
+                    <div className="mt-4">
+                      <p className="mb-3 text-[16px] font-semibold text-gray-700">
+                        Options (Select the correct answer)
+                      </p>
+
+                      {(question.options || []).length === 0 ? (
+                        <button
+                          type="button"
+                          onClick={() => handleInitializeOptions(question.id)}
+                          className="inline-flex w-full items-center justify-center gap-2 rounded-[10px] border border-dashed border-indigo-300 bg-indigo-50 px-4 py-3 text-[16px] font-semibold text-indigo-600 transition-colors hover:bg-indigo-100"
+                        >
+                          <Plus className="h-4 w-4" />
+                          Add Options for MCQ
+                        </button>
+                      ) : (
+                        <>
+                          <div className="space-y-2.5">
+                            {(question.options || []).map((option) => (
+                              <div
+                                key={option.id}
+                                className="flex items-center gap-3 rounded-[10px] border border-gray-300 bg-white px-3 py-2"
+                              >
+                                <input
+                                  type="radio"
+                                  name={`correct-option-${question.id}`}
+                                  checked={question.correctOption === option.id}
+                                  onChange={() => handleCorrectOptionChange(question.id, option.id)}
+                                  className="h-5 w-5 accent-indigo-600"
+                                  aria-label={`Set option ${option.id} as correct answer`}
+                                />
+                                <input
+                                  type="text"
+                                  value={option.text}
+                                  onChange={(event) =>
+                                    handleOptionTextChange(question.id, option.id, event.target.value)
+                                  }
+                                  placeholder={`Option ${option.id}`}
+                                  className="flex-1 rounded-[10px] border border-gray-300 px-3 py-2 text-sm font-normal text-gray-700 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => handleDeleteOption(question.id, option.id)}
+                                  className="text-red-500 transition-colors hover:text-red-600 disabled:cursor-not-allowed disabled:opacity-35"
+                                  disabled={(question.options || []).length <= 2}
+                                  aria-label={`Delete option ${option.id}`}
+                                >
+                                  <Trash2 className="h-4 w-4" />
+                                </button>
+                              </div>
+                            ))}
+                          </div>
+
+                          <button
+                            type="button"
+                            onClick={() => handleAddOption(question.id)}
+                            className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-[10px] bg-gradient-to-r from-indigo-500 to-purple-500 px-4 py-2 text-sm font-semibold text-white"
+                          >
+                            <Plus className="h-4 w-4" />
+                            Add Another Option
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))
+              ) : examType === "coding" ? (
+                questions.map((question) => (
+                  <div key={question.id} className="rounded-[10px] border border-gray-200 bg-[#f5f6f8] p-4">
+                    <div className="mb-3 flex items-center justify-between">
+                      <p className="text-[16px] font-bold text-gray-700">Question {question.id}</p>
+                      {questions.length > 1 && (
+                        <button
+                          type="button"
+                          onClick={() => handleDeleteQuestion(question.id)}
+                          className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] border border-red-200 bg-red-50 text-red-600 transition-colors hover:bg-red-100"
+                          aria-label={`Delete question ${question.id}`}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
+
+                    <textarea
+                      rows={3}
+                      placeholder="Enter your question here..."
+                      value={question.text}
+                      onChange={(event) => handleQuestionTextChange(question.id, event.target.value)}
+                      className="w-full resize-none rounded-[10px] border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+
+                    <div className="mt-4 flex items-center gap-3">
+                      <label className="text-[16px] font-semibold text-gray-700">Points:</label>
+                      <input
+                        type="number"
+                        min={1}
+                        value={question.points}
+                        onChange={(event) => handleQuestionPointsChange(question.id, event.target.value)}
+                        className="w-[76px] rounded-[10px] border border-gray-300 bg-white px-3 py-1.5 text-sm font-medium leading-none text-gray-700 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                      />
+                    </div>
+
+                    <div className="mt-4">
+                      <p className="mb-3 text-[16px] font-semibold text-gray-700">Test Cases</p>
+
+                      {(question.testCases || []).length > 0 && (
+                        <div className="mb-3 space-y-3">
+                          {(question.testCases || []).map((testCase) => (
+                            <div key={testCase.id} className="flex items-center gap-3">
+                              <div className="grid flex-1 grid-cols-1 gap-3 md:grid-cols-2">
+                                <input
+                                  type="text"
+                                  value={testCase.input}
+                                  onChange={(event) =>
+                                    handleTestCaseChange(
+                                      question.id,
+                                      testCase.id,
+                                      "input",
+                                      event.target.value
+                                    )
+                                  }
+                                  placeholder={`Input ${testCase.id}`}
+                                  className="h-10 w-full rounded-[10px] border border-gray-300 px-8 text-[16px] text-gray-700 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                />
+                                <input
+                                  type="text"
+                                  value={testCase.output}
+                                  onChange={(event) =>
+                                    handleTestCaseChange(
+                                      question.id,
+                                      testCase.id,
+                                      "output",
+                                      event.target.value
+                                    )
+                                  }
+                                  placeholder={`Output ${testCase.id}`}
+                                  className="h-10 w-full rounded-[10px] border border-gray-300 px-8 text-[16px] text-gray-700 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                                />
+                              </div>
+
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteTestCase(question.id, testCase.id)}
+                                className="inline-flex h-8 w-8 items-center justify-center rounded-[10px] bg-gray-100 text-gray-400 transition-colors hover:bg-gray-200 hover:text-gray-500"
+                                aria-label={`Delete test case ${testCase.id}`}
+                              >
+                                <Trash2 className="h-6 w-6" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      <button
+                        type="button"
+                        onClick={() => handleAddTestCase(question.id)}
+                        className="inline-flex items-center gap-2 rounded-[10px] bg-gradient-to-r from-indigo-500 to-purple-500 px-10 py-2 text-[16px] font-semibold text-white"
+                      >
+                        <Plus className="h-3 w-3" />
+                        Add Test Case
+                      </button>
+                    </div>
+                  </div>
+                ))
+              ) : (
+                <div className="rounded-[10px] border border-gray-200 bg-white p-6 text-sm text-gray-600">
+                  Question builder for this exam type will appear here in the next step.
+                </div>
+              )}
+
+              <div className="rounded-[10px] border border-indigo-200 bg-indigo-50/70 p-4">
+                <div className="flex items-center justify-between text-sm font-semibold text-indigo-900">
+                  <span>Total Questions:</span>
+                  <span className="text-3xl">{questions.length}</span>
+                </div>
+                <div className="mt-2 flex items-center justify-between text-sm font-semibold text-indigo-900">
+                  <span>Total Points:</span>
+                  <span className="text-3xl">{totalPoints}</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between border-t border-gray-200 bg-gray-50 px-4 py-4">
+              <button
+                type="button"
+                onClick={handlePrevious}
+                className="rounded-[10px] border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50"
+              >
+                Previous
+              </button>
+
+              <button
+                type="button"
+                onClick={handleNext}
+                disabled={!isStep2Valid}
+                className="rounded-[10px] bg-gradient-to-r from-indigo-400 to-purple-400 px-6 py-2.5 text-sm font-semibold text-white transition-all hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50 disabled:hover:brightness-100"
+              >
+                Next Step
+              </button>
+            </div>
+          </>
+        ) : currentStep === 3 ? (
+          <>
+            <div className="max-h-[62vh] space-y-5 overflow-y-auto bg-white p-6">
+              <h4 className="text-[20px] font-extrabold text-gray-900">Exam Rules & Instructions</h4>
+
+              <div>
+                <label className="mb-2 block text-[16px] font-bold text-gray-600">
+                  General Instructions
+                </label>
+                <textarea
+                  rows={4}
+                  value={generalInstructions}
+                  onChange={(event) => setGeneralInstructions(event.target.value)}
+                  placeholder="Add any specific instructions for candidates..."
+                  className="w-full resize-none rounded-[10px] border border-gray-300 px-4 py-3 text-sm text-gray-700 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                />
+              </div>
+
+              <div>
+                <p className="mb-3 text-[16px] font-bold text-gray-600">Proctoring Rules</p>
+
+                <div className="space-y-2.5">
+                  {proctoringRules.map((rule, index) => (
+                    <div
+                      key={`${rule}-${index}`}
+                      className="flex items-center justify-between rounded-[10px] border border-gray-200 bg-[#f5f6f8] px-3 py-2.5"
+                    >
+                      <div className="flex items-center gap-3">
+                        <AlertCircle className="h-5 w-5 text-indigo-500" />
+                        <p className="text-sm text-gray-600">{rule}</p>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveProctoringRule(index)}
+                        className="text-red-500 transition-colors hover:text-red-600"
+                        aria-label={`Delete rule ${index + 1}`}
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
+
+                  <div className="flex items-center gap-2.5">
+                    <input
+                      type="text"
+                      value={newRule}
+                      onChange={(event) => setNewRule(event.target.value)}
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          handleAddProctoringRule();
+                        }
+                      }}
+                      placeholder="Add a new rule..."
+                      className="flex-1 rounded-[10px] border border-gray-300 px-3 py-2.5 text-sm text-gray-700 placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleAddProctoringRule}
+                      className="inline-flex h-10 w-10 items-center justify-center rounded-[10px] bg-gradient-to-r from-indigo-500 to-purple-500 text-white"
+                      aria-label="Add proctoring rule"
+                    >
+                      <Plus className="h-5 w-5" />
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between border-t border-gray-200 bg-gray-50 px-4 py-4">
+              <button
+                type="button"
+                onClick={handlePrevious}
+                className="rounded-[10px] border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50"
+              >
+                Previous
+              </button>
+
+              <button
+                type="button"
+                onClick={handleNext}
+                className="rounded-[10px] bg-gradient-to-r from-indigo-400 to-purple-400 px-6 py-2.5 text-sm font-semibold text-white transition-all hover:brightness-105"
+              >
+                Next Step
+              </button>
+            </div>
+          </>
+        ) : (
+          <>
+            <div className="max-h-[62vh] space-y-4 overflow-y-auto bg-white p-6">
+              <h4 className="text-[20px] font-extrabold text-gray-900">Review & Confirm</h4>
+
+              <div className="rounded-[10px] border border-indigo-200 bg-indigo-50/70 p-6">
+                <h5 className="text-[16px] font-bold text-gray-900">{examTitle || "Untitled Exam"}</h5>
+                <p className="mt-2 text-sm text-gray-600">
+                  {examDescription || "No description provided."}
+                </p>
+
+                <div className="mt-5 grid grid-cols-2 gap-3 md:grid-cols-5">
+                  <div className="rounded-[10px] bg-white p-4 text-center">
+                    <SelectedExamTypeIcon className="mx-auto h-6 w-6 text-indigo-600" />
+                    <p className="mt-2 text-[18px] font-bold text-gray-900">{selectedExamType}</p>
+                    <p className="text-[14px] text-gray-500">Exam Type</p>
+                  </div>
+
+                  <div className="rounded-[10px] bg-white p-4 text-center">
+                    <Clock3 className="mx-auto h-6 w-6 text-indigo-600" />
+                    <p className="mt-2 text-[18px] font-bold text-gray-900">{durationMinutes || 0}</p>
+                    <p className="text-[14px] text-gray-500">Minutes</p>
+                  </div>
+
+                  <div className="rounded-[10px] bg-white p-4 text-center">
+                    <FileText className="mx-auto h-6 w-6 text-indigo-600" />
+                    <p className="mt-2 text-[18px] font-bold text-gray-900">{questions.length}</p>
+                    <p className="text-[14px] text-gray-500">Questions</p>
+                  </div>
+
+                  <div className="rounded-[10px] bg-white p-4 text-center">
+                    <CheckSquare className="mx-auto h-6 w-6 text-emerald-600" />
+                    <p className="mt-2 text-[18px] font-bold text-gray-900">{totalPoints}</p>
+                    <p className="text-[14px] text-gray-500">Total Points</p>
+                  </div>
+
+                  <div className="rounded-[10px] bg-white p-4 text-center">
+                    <AlertCircle className="mx-auto h-6 w-6 text-amber-600" />
+                    <p className="mt-2 text-[18px] font-bold text-gray-900">{proctoringRules.length}</p>
+                    <p className="text-[14px] text-gray-500">Rules</p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="rounded-[10px] border border-amber-200 bg-amber-50 px-4 py-3 text-amber-700">
+                <p className="text-sm font-semibold">Ready to Create?</p>
+                <p className="mt-1 text-sm">
+                  Please review all details carefully. Once created, the exam will be available to assign to candidates.
+                </p>
+              </div>
+            </div>
+
+            <div className="flex items-center justify-between border-t border-gray-200 bg-gray-50 px-4 py-4">
+              <button
+                type="button"
+                onClick={handlePrevious}
+                className="rounded-[10px] border border-gray-300 bg-white px-4 py-2.5 text-sm font-semibold text-gray-700 transition-colors hover:bg-gray-50"
+              >
+                Previous
+              </button>
+
+              <button
+                type="button"
+                onClick={onClose}
+                className="inline-flex items-center gap-2 rounded-[10px] bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-emerald-700"
+              >
+                <Save className="h-4 w-4" />
+                Create Exam
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}

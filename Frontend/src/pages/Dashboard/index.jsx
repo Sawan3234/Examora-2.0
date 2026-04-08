@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
-import Header from '../../components/common/Header';
+import { Header } from '../../components/Layout/Header';
 import Button from '../../components/UI/Button';
 import SearchView from '../../components/UI/SearchView';
 import ProgressBar from '../../components/UI/ProgressBar';

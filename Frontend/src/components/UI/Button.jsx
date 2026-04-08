@@ -1,47 +1,115 @@
-export function Button({
+import React from 'react';
+import { cva } from 'class-variance-authority';
+import { twMerge } from 'tailwind-merge';
+
+const buttonClasses = cva(
+  'inline-flex items-center justify-center font-medium transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed',
+  {
+    variants: {
+      variant: {
+        primary: 'hover:opacity-90 focus:ring-blue-500',
+        secondary: 'bg-gray-200 text-gray-800 hover:bg-gray-300 focus:ring-gray-500',
+        outline: 'border-2 bg-transparent hover:bg-opacity-10 focus:ring-blue-500',
+      },
+      size: {
+        small: 'text-sm px-3 py-1.5',
+        medium: 'text-base px-4 py-2',
+        large: 'text-lg px-6 py-3',
+      },
+    },
+    defaultVariants: {
+      variant: 'primary',
+      size: 'medium',
+    },
+  }
+);
+
+const Button = ({
+  // Required parameters with defaults
+  text = "Manage Exams",
+  text_font_size = "text-base",
+  text_font_family = "Inter",
+  text_font_weight = "font-semibold",
+  text_line_height = "leading-base",
+  text_text_align = "center",
+  text_color = "text-button-primary-text",
+  fill_background = "linear-gradient(90deg, #4f39f6 0%, #9810fa 100%)",
+  border_border_radius = "rounded-md",
+  effect_box_shadow = "shadow-[0px_4px_6px_#00000019]",
+  
+  // Optional parameters (no defaults)
+  fill_background_color,
+  layout_gap,
+  layout_width,
+  padding,
+  position,
+  margin,
+  
+  // Standard React props
+  variant,
+  size,
+  disabled = false,
+  className,
   children,
-  variant = "primary",
-  size = "md",
-  className = "",
   onClick,
+  type = "button",
   ...props
-}) {
-  const baseStyles =
-    "font-semibold rounded-lg transition-colors focus:outline-none";
+}) => {
+  // Safe validation for optional parameters
+  const hasValidBackgroundColor = fill_background_color && typeof fill_background_color === 'string' && fill_background_color?.trim() !== '';
+  const hasValidGap = layout_gap && typeof layout_gap === 'string' && layout_gap?.trim() !== '';
+  const hasValidWidth = layout_width && typeof layout_width === 'string' && layout_width?.trim() !== '';
+  const hasValidPadding = padding && typeof padding === 'string' && padding?.trim() !== '';
+  const hasValidMargin = margin && typeof margin === 'string' && margin?.trim() !== '';
+  const hasValidPosition = position && typeof position === 'string' && position?.trim() !== '';
 
-  const variantStyles = {
-    primary: "bg-violet-600 text-white hover:bg-violet-700",
-    secondary: "bg-gray-200 text-gray-900 hover:bg-gray-300",
-    ghost: "bg-transparent text-gray-600 hover:bg-gray-100",
-    tab: "bg-transparent text-gray-600 hover:text-gray-900 border-b-2 border-transparent hover:border-gray-300",
-    tabActive: "bg-transparent text-violet-600 border-b-2 border-violet-600",
+  // Build optional Tailwind classes
+  const optionalClasses = [
+    hasValidWidth ? `w-[${layout_width}]` : '',
+    hasValidPadding ? `p-[${padding}]` : '',
+    hasValidMargin ? `m-[${margin}]` : '',
+    hasValidPosition ? position : '',
+    hasValidGap ? `gap-[${layout_gap}]` : '',
+  ]?.filter(Boolean)?.join(' ');
+
+  // Build inline styles for required parameters
+  const buttonStyles = {
+    fontSize: text_font_size === "text-base" ? "16px" : text_font_size,
+    fontFamily: text_font_family || 'Inter',
+    fontWeight: text_font_weight === "font-semibold" ? "600" : text_font_weight,
+    lineHeight: text_line_height === "leading-base" ? "20px" : text_line_height,
+    textAlign: text_text_align || 'center',
+    color: text_color === "text-button-primary-text" ? "#ffffff" : text_color,
+    background: hasValidBackgroundColor ? fill_background_color : fill_background,
+    borderRadius: border_border_radius === "rounded-md" ? "10px" : border_border_radius,
+    boxShadow: effect_box_shadow === "shadow-[0px_4px_6px_#00000019]" ? "0px 4px 6px #00000019" : effect_box_shadow,
   };
 
-  const sizeStyles = {
-    sm: "px-3 py-1.5 text-sm",
-    md: "px-4 py-2 text-base",
-    lg: "px-6 py-3 text-lg",
+  // Safe click handler
+  const handleClick = (event) => {
+    if (disabled) return;
+    if (typeof onClick === 'function') {
+      onClick(event);
+    }
   };
 
   return (
     <button
-      className={`${baseStyles} ${variantStyles[variant]} ${sizeStyles[size]} ${className}`}
-      onClick={onClick}
+      type={type}
+      disabled={disabled}
+      onClick={handleClick}
+      style={buttonStyles}
+      className={twMerge(
+        buttonClasses({ variant, size }),
+        optionalClasses,
+        className
+      )}
+      aria-disabled={disabled}
       {...props}
     >
-      {children}
+      {children || text}
     </button>
   );
-}
+};
 
-export function IconButton({ icon: Icon, onClick, className = "", ...props }) {
-  return (
-    <button
-      onClick={onClick}
-      className={`p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors ${className}`}
-      {...props}
-    >
-      {Icon && <Icon size={20} />}
-    </button>
-  );
-}
+export default Button;
