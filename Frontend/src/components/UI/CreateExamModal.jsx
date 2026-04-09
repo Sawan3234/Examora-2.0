@@ -794,11 +794,11 @@ export function CreateExamModal({ isOpen, onClose }) {
           </>
         ) : currentStep === 3 ? (
           <>
-            <div className="max-h-[62vh] space-y-5 overflow-y-auto bg-white p-6">
+            <div className="max-h-[62vh] space-y-1 overflow-y-auto bg-white p-6">
               <h4 className="text-[20px] font-extrabold text-gray-900">Exam Rules & Instructions</h4>
 
               <div>
-                <label className="mb-2 block text-[16px] font-bold text-gray-600">
+                <label className="mb-1 block text-[16px] font-bold text-gray-600">
                   General Instructions
                 </label>
                 <textarea
@@ -811,9 +811,9 @@ export function CreateExamModal({ isOpen, onClose }) {
               </div>
 
               <div>
-                <p className="mb-3 text-[16px] font-bold text-gray-600">Proctoring Rules</p>
+                <p className="mb-2 text-[16px] font-bold text-gray-600">Proctoring Rules</p>
 
-                <div className="space-y-2.5">
+                <div className="space-y-2">
                   {proctoringRules.map((rule, index) => (
                     <div
                       key={`${rule}-${index}`}

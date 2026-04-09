@@ -1,8 +1,8 @@
-import { AdminDashboard } from './pages/AdminDashboard';
+import AppRoutes from './Routes';
 
 function App() {
   return (
-    <AdminDashboard />
+    <AppRoutes />
   );
 }
 

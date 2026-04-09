@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useNavigate } from "react-router-dom";
 import { Plus, Users, Eye, AlertTriangle, CheckCircle, BookOpen } from "lucide-react";
 import { Header } from "../components/Layout/Header";
 import { Card, StatCard } from "../components/UI/Card";
@@ -13,6 +14,7 @@ export function AdminDashboard() {
   const [searchQuery, setSearchQuery] = useState("");
   const [filterStatus, setFilterStatus] = useState("All");
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const navigate = useNavigate();
 
   const previewStats = {
     activeSessions: 0,
@@ -32,12 +34,12 @@ export function AdminDashboard() {
         <div className={`${PAGE_SHELL} space-y-7 py-6 sm:space-y-8 sm:py-8`}>
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6">
             <div className="min-w-0 space-y-1">
-                      <h2 className="text-[36px] font-extrabold tracking-wider text-gray-900 sm:text-4xl">Exam Sessions</h2>
-              <p className="text-sm text-gray-800 sm:text-base">Monitor ongoing and completed examinations</p>
+                      <h2 className="text-[30px] font-extrabold tracking-wider text-gray-900 sm:text-4xl">Exam Sessions</h2>
+              <p className="text-[16px] text-gray-800 sm:text-base">Monitor ongoing and completed examinations</p>
             </div>
             <button
               type="button"
-              onClick={() => setIsCreateModalOpen(true)}
+              onClick={() => navigate("/exams")}
               className="inline-flex w-full items-center justify-center gap-2 rounded-[10px] bg-[linear-gradient(90deg,#4f39f6_0%,#9810fa_100%)] px-4 py-2 text-base font-semibold leading-5 text-[#ffffff] shadow-[0px_4px_6px_#00000019] transition-opacity hover:opacity-95 shrink-0 lg:w-auto"
               style={{ fontFamily: "Inter, sans-serif" }}
             >

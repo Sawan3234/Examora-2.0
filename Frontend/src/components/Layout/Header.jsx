@@ -16,23 +16,23 @@ export function Header({
 
   return (
     <header className="w-full bg-white border-b border-gray-200 shadow-sm shrink-0">
-      <div className={`${PAGE_GUTTER} py-2`} style={{ fontFamily: "Inter, sans-serif" }}>
+      <div className={`${PAGE_GUTTER} py-1`} style={{ fontFamily: "Inter, sans-serif" }}>
         <div className="flex items-center justify-between gap-4">
 
           {/* Logo + Title */}
-          <div className="flex items-center gap-4 min-w-0">
-            <div className="h-10 w-10 shrink-0">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="h-24 w-24 shrink-0">
               <img
                 src={logo}
                 alt="Examora Logo"
                 className="h-full w-full object-contain"
               />
             </div>
-            <div className="min-w-0 flex flex-col gap-0">
-           <div style={{ fontSize: "24px", fontWeight: "800", color: "#111827" }}>
+            <div className="min-w-0 flex flex-col gap-0 -ml-1">
+           <div style={{ fontSize: "22px", fontWeight: "800", color: "#111827" }}>
   EXAMORA Admin Dashboard
 </div>
-              <p className="text-sm font-medium text-gray-500 leading-tight">
+              <p className="text-[16px] font-medium text-gray-500 leading-tight">
                 Real-time Proctoring Monitoring
               </p>
             </div>
