@@ -40,10 +40,10 @@ export function AdminDashboard() {
             <button
               type="button"
               onClick={() => navigate("/exams")}
-              className="inline-flex w-full items-center justify-center gap-2 rounded-[10px] bg-[linear-gradient(90deg,#4f39f6_0%,#9810fa_100%)] px-4 py-2 text-base font-semibold leading-5 text-[#ffffff] shadow-[0px_4px_6px_#00000019] transition-opacity hover:opacity-95 shrink-0 lg:w-auto"
+              className="inline-flex w-full items-center justify-center gap-2 rounded-[10px] bg-[linear-gradient(90deg,#4f39f6_0%,#9810fa_100%)] px-5 py-2.5 text-[17px] font-semibold leading-5 text-[#ffffff] shadow-[0px_4px_6px_#00000019] transition-opacity hover:opacity-95 shrink-0 lg:w-auto"
               style={{ fontFamily: "Inter, sans-serif" }}
             >
-              <BookOpen className="h-5 w-5 shrink-0" strokeWidth={2} />
+              <BookOpen className="h-6 w-6 shrink-0" strokeWidth={2} />
               Manage Exams
             </button>
           </div>

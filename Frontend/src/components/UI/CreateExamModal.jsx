@@ -59,17 +59,37 @@ const EXAM_TYPES = [
   },
 ];
 
-export function CreateExamModal({ isOpen, onClose }) {
+export function CreateExamModal({
+  isOpen,
+  onClose,
+  initialStep = 1,
+  onCreate,
+  editExam = null,
+  onUpdate,
+}) {
+  const [isClosing, setIsClosing] = useState(false);
   const [currentStep, setCurrentStep] = useState(1);
   const [examType, setExamType] = useState("writing");
   const [questions, setQuestions] = useState([createEmptyQuestion(1)]);
   const [examTitle, setExamTitle] = useState("");
   const [examDescription, setExamDescription] = useState("");
   const [durationMinutes, setDurationMinutes] = useState(30);
+  const [passingScore, setPassingScore] = useState(60);
+  const [scheduledDate, setScheduledDate] = useState("");
+  const [scheduledTime, setScheduledTime] = useState("");
   const [generalInstructions, setGeneralInstructions] = useState("");
   const [proctoringRules, setProctoringRules] = useState(DEFAULT_PROCTORING_RULES);
   const [newRule, setNewRule] = useState("");
   const onCloseRef = useRef(onClose);
+  const isEditMode = Boolean(editExam);
+
+  const handleClose = () => {
+    setIsClosing(true);
+    setTimeout(() => {
+      setIsClosing(false);
+      onCloseRef.current();
+    }, 400);
+  };
 
   useEffect(() => {
     onCloseRef.current = onClose;
@@ -86,6 +106,34 @@ export function CreateExamModal({ isOpen, onClose }) {
     examType.trim().length > 0 &&
     Number(durationMinutes) > 0;
   const isStep2Valid = questions.some((question) => question.text.trim().length > 0);
+
+  const getExamTypeKey = (value) => {
+    const matched = EXAM_TYPES.find((type) => type.key === value || type.title === value);
+    return matched?.key || "writing";
+  };
+
+  const getDurationValue = (durationValue) => {
+    const matched = String(durationValue || "").match(/\d+/);
+    return matched ? Number(matched[0]) : 30;
+  };
+
+  const toInputDateTime = (value) => {
+    if (!value) return { date: "", time: "" };
+
+    const parsed = new Date(value);
+    if (Number.isNaN(parsed.getTime())) return { date: "", time: "" };
+
+    const year = parsed.getFullYear();
+    const month = String(parsed.getMonth() + 1).padStart(2, "0");
+    const day = String(parsed.getDate()).padStart(2, "0");
+    const hours = String(parsed.getHours()).padStart(2, "0");
+    const minutes = String(parsed.getMinutes()).padStart(2, "0");
+
+    return {
+      date: `${year}-${month}-${day}`,
+      time: `${hours}:${minutes}`,
+    };
+  };
 
   const handleNext = () => {
     if (currentStep === 1 && !isStep1Valid) return;
@@ -267,42 +315,219 @@ export function CreateExamModal({ isOpen, onClose }) {
     setNewRule("");
   };
 
-  useEffect(() => {
-    if (!isOpen) return;
+  const formatScheduledLabel = () => {
+    if (!scheduledDate) return "TBD";
 
-    setCurrentStep(1);
-    setQuestions([createEmptyQuestion(1)]);
-    setExamTitle("");
-    setExamDescription("");
-    setDurationMinutes(30);
-    setGeneralInstructions("");
-    setProctoringRules(DEFAULT_PROCTORING_RULES);
+    const parsed = new Date(`${scheduledDate}T00:00:00`);
+    if (Number.isNaN(parsed.getTime())) return "TBD";
+
+    return parsed.toLocaleDateString(undefined, {
+      month: "short",
+      day: "numeric",
+    });
+  };
+
+  const formatScheduledAt = () => {
+    if (!scheduledDate) return "Not scheduled";
+
+    const dateSource = scheduledTime ? `${scheduledDate}T${scheduledTime}` : `${scheduledDate}T00:00:00`;
+    const parsed = new Date(dateSource);
+    if (Number.isNaN(parsed.getTime())) return "Not scheduled";
+
+    const datePart = parsed.toLocaleDateString(undefined, {
+      weekday: "long",
+      month: "long",
+      day: "numeric",
+      year: "numeric",
+    });
+
+    if (!scheduledTime) return datePart;
+
+    const timePart = parsed.toLocaleTimeString([], {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: false,
+    });
+
+    return `${datePart} at ${timePart}`;
+  };
+
+  const getScheduledDateTime = () => {
+    if (!scheduledDate) return null;
+
+    const dateSource = scheduledTime ? `${scheduledDate}T${scheduledTime}` : `${scheduledDate}T00:00:00`;
+    const parsed = new Date(dateSource);
+    if (Number.isNaN(parsed.getTime())) return null;
+
+    return parsed.toISOString();
+  };
+
+  const handleSubmitExam = () => {
+    const payload = {
+      title: examTitle.trim() || "Untitled Exam",
+      description: examDescription.trim() || "No description provided.",
+      type: selectedExamType,
+      examTypeKey: examType,
+      status: "Scheduled",
+      duration: `${Number(durationMinutes) || 0} mins`,
+      questions: questions.length,
+      participants: Number(editExam?.participants || 0),
+      scheduled: formatScheduledLabel(),
+      scheduledAt: formatScheduledAt(),
+      scheduledDateTime: getScheduledDateTime(),
+      totalPoints,
+      passingScore: Number(passingScore) || 0,
+      generalInstructions,
+      proctoringRules,
+      questionItems: questions.map((question) => ({
+        id: question.id,
+        text: question.text.trim() || `Question ${question.id}`,
+        points: Number(question.points) || 0,
+      })),
+    };
+
+    if (isEditMode && typeof onUpdate === "function") {
+      onUpdate(editExam.id, payload);
+    } else if (typeof onCreate === "function") {
+      onCreate(payload);
+    }
+
+    handleClose();
+  };
+
+  useEffect(() => {
+    if (!isOpen) {
+      setIsClosing(false);
+      return;
+    }
+
+    setCurrentStep(Math.min(Math.max(Number(initialStep) || 1, 1), STEPS.length));
+
+    if (editExam) {
+      const normalizedQuestions = (editExam.questionItems || []).length
+        ? editExam.questionItems.map((question, index) => ({
+            ...createEmptyQuestion(index + 1),
+            id: index + 1,
+            text: question.text || "",
+            points: Number(question.points) || 10,
+          }))
+        : [createEmptyQuestion(1)];
+
+      const { date, time } = toInputDateTime(editExam.scheduledDateTime);
+
+      setQuestions(normalizedQuestions);
+      setExamTitle(editExam.title || "");
+      setExamDescription(editExam.description || "");
+      setExamType(getExamTypeKey(editExam.examTypeKey || editExam.type));
+      setDurationMinutes(getDurationValue(editExam.duration));
+      setPassingScore(Number(editExam.passingScore) || 60);
+      setScheduledDate(date);
+      setScheduledTime(time);
+      setGeneralInstructions(editExam.generalInstructions || "");
+      setProctoringRules(
+        Array.isArray(editExam.proctoringRules) && editExam.proctoringRules.length > 0
+          ? editExam.proctoringRules
+          : DEFAULT_PROCTORING_RULES
+      );
+    } else {
+      setQuestions([createEmptyQuestion(1)]);
+      setExamTitle("");
+      setExamDescription("");
+      setExamType("writing");
+      setDurationMinutes(30);
+      setPassingScore(60);
+      setScheduledDate("");
+      setScheduledTime("");
+      setGeneralInstructions("");
+      setProctoringRules(DEFAULT_PROCTORING_RULES);
+    }
+
     setNewRule("");
 
     const onKeyDown = (event) => {
       if (event.key === "Escape") {
-        onCloseRef.current();
+        handleClose();
       }
     };
 
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [isOpen]);
+  }, [isOpen, initialStep, editExam]);
 
-  if (!isOpen) return null;
+  if (!isOpen && !isClosing) return null;
+
+  const animationStyles = `
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+    
+    @keyframes fadeOut {
+      from {
+        opacity: 1;
+      }
+      to {
+        opacity: 0;
+      }
+    }
+    
+    @keyframes slideUpFromBottomRight {
+      from {
+        opacity: 0;
+        transform: translate(120px, 120px) scale(0.85);
+      }
+      to {
+        opacity: 1;
+        transform: translate(0, 0) scale(1);
+      }
+    }
+    
+    @keyframes slideDownToBottomRight {
+      from {
+        opacity: 1;
+        transform: translate(0, 0) scale(1);
+      }
+      to {
+        opacity: 0;
+        transform: translate(120px, 120px) scale(0.85);
+      }
+    }
+    
+    .modal-backdrop {
+      animation: fadeIn 0.3s ease-out;
+    }
+    
+    .modal-backdrop.closing {
+      animation: fadeOut 0.3s ease-in forwards;
+    }
+    
+    .modal-content {
+      animation: slideUpFromBottomRight 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    
+    .modal-content.closing {
+      animation: slideDownToBottomRight 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    }
+  `;
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4 py-6 backdrop-blur-[2px] rounded-lg"
-      onClick={onClose}
-      role="presentation"
-    >
+    <>
+      <style>{animationStyles}</style>
       <div
-        className="w-full max-w-[920px] overflow-hidden rounded-3xl bg-white shadow-2xl"
-        onClick={(event) => event.stopPropagation()}
+        className={`modal-backdrop fixed inset-0 z-50 flex items-center justify-center bg-black/45 px-4 py-6 backdrop-blur-[2px] rounded-lg${isClosing ? " closing" : ""}`}
+        onClick={handleClose}
+        role="presentation"
+      >
+        <div
+          className={`modal-content w-full max-w-[920px] overflow-hidden rounded-3xl bg-white shadow-2xl${isClosing ? " closing" : ""}`}
+          onClick={(event) => event.stopPropagation()}
         role="dialog"
         aria-modal="true"
-        aria-label="Create New Exam"
+        aria-label={isEditMode ? "Edit Exam" : "Create New Exam"}
       >
         <div className="flex items-center justify-between bg-gradient-to-r from-indigo-600 to-purple-600 p-6">
           <div className="flex items-center gap-3">
@@ -310,7 +535,7 @@ export function CreateExamModal({ isOpen, onClose }) {
               <FileText className="h-5 w-5 text-white" />
             </div>
             <div>
-              <h3 className="text-xl font-bold text-white">Create New Exam</h3>
+              <h3 className="text-xl font-bold text-white">{isEditMode ? "Edit Exam" : "Create New Exam"}</h3>
               <p className="mt-0.5 text-sm text-indigo-100">Step {currentStep} of 4</p>
             </div>
           </div>
@@ -318,7 +543,7 @@ export function CreateExamModal({ isOpen, onClose }) {
           <button
             type="button"
             onClick={onClose}
-            className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/10 text-white transition-colors hover:bg-white/20"
+            className="flex h-8 w-8 items-center justify-center rounded-[10px] bg-white/10 text-white transition-colors hover:bg-white/20"
             aria-label="Close modal"
           >
             <X className="h-[18px] w-[18px]" />
@@ -456,7 +681,8 @@ export function CreateExamModal({ isOpen, onClose }) {
                     type="number"
                     min={0}
                     max={100}
-                    defaultValue={60}
+                    value={passingScore}
+                    onChange={(event) => setPassingScore(Number(event.target.value) || 0)}
                     className="w-full rounded-[10px] border border-gray-300 px-3 py-3 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
@@ -470,6 +696,8 @@ export function CreateExamModal({ isOpen, onClose }) {
                   </label>
                   <input
                     type="date"
+                    value={scheduledDate}
+                    onChange={(event) => setScheduledDate(event.target.value)}
                     className="w-full rounded-[10px] border border-gray-300 px-3 py-3 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
@@ -479,6 +707,8 @@ export function CreateExamModal({ isOpen, onClose }) {
                   </label>
                   <input
                     type="time"
+                    value={scheduledTime}
+                    onChange={(event) => setScheduledTime(event.target.value)}
                     className="w-full rounded-[10px] border border-gray-300 px-3 py-3 text-sm text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
                   />
                 </div>
@@ -942,16 +1172,17 @@ export function CreateExamModal({ isOpen, onClose }) {
 
               <button
                 type="button"
-                onClick={onClose}
+                onClick={handleSubmitExam}
                 className="inline-flex items-center gap-2 rounded-[10px] bg-emerald-600 px-6 py-2.5 text-sm font-semibold text-white transition-all hover:bg-emerald-700"
               >
                 <Save className="h-4 w-4" />
-                Create Exam
+                {isEditMode ? "Save Changes" : "Create Exam"}
               </button>
             </div>
           </>
         )}
       </div>
     </div>
+    </>
   );
 }
